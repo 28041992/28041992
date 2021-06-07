@@ -1,0 +1,202 @@
+Controller
+-----------
+using CrudApplication.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+
+namespace CrudApplication.Controllers
+{
+    public class StudentController : Controller
+    {
+        // GET: Student
+        public ActionResult GetData()
+        {
+            StudentInfo studentInfo = new StudentInfo();
+            List<StudentValidation> studentValidations = new List<StudentValidation>();
+            using (StudentDataEntities studentDataEntities = new StudentDataEntities())
+            {
+                studentValidations = studentDataEntities.tblStudents.ToList().Select(x => new StudentValidation { ID = x.ID, Name = x.Name, Address = x.Address, MobileNumber = x.MobileNumber }).ToList();
+
+                studentInfo.liststudent = studentValidations;
+            }
+                return View(studentInfo);
+        }
+        [HttpPost]
+        public ActionResult AddData(StudentInfo student)
+        {
+            
+            if(student.addstudent.ID == 0)
+            {
+                using (StudentDataEntities studentDataEntities = new StudentDataEntities())
+                {
+                    tblStudent tbl = new tblStudent();
+                    tbl.Name = student.addstudent.Name;
+                    tbl.Address = student.addstudent.Address;
+                    tbl.MobileNumber = student.addstudent.MobileNumber;
+                    studentDataEntities.tblStudents.Add(tbl);
+                    studentDataEntities.SaveChanges();
+
+                }
+            }
+            else
+            {
+                using (StudentDataEntities studentDataEntities = new StudentDataEntities())
+                {
+                    var Update = studentDataEntities.tblStudents.Where(x => x.ID == student.addstudent.ID).FirstOrDefault();
+                    Update.Name = student.addstudent.Name;
+                    Update.Address = student.addstudent.Address;
+                    Update.MobileNumber = student.addstudent.MobileNumber;
+                    studentDataEntities.SaveChanges();
+                }
+            }
+            return RedirectToAction("GetData");
+        }
+        [HttpGet]
+
+        public ActionResult EditData (int id)
+        {
+            StudentInfo studentInfo = new StudentInfo();
+
+            using (StudentDataEntities studentDataEntities = new StudentDataEntities())
+            {
+                studentInfo.liststudent = studentDataEntities.tblStudents.ToList().Select(x => new StudentValidation { ID = x.ID, Name = x.Name, Address = x.Address, MobileNumber = x.MobileNumber }).ToList();
+            }
+            using (StudentDataEntities studentDataEntities = new StudentDataEntities())
+            {
+                studentInfo.addstudent = studentDataEntities.tblStudents.Where(x => x.ID == id).Select(x => new StudentValidation { ID = x.ID, Name = x.Name, Address = x.Address, MobileNumber = x.MobileNumber }).FirstOrDefault();
+            }
+
+            return View("GetData", studentInfo);
+        }
+        public ActionResult DeleteData(int id)
+        {
+            using (StudentDataEntities studentDataEntities = new StudentDataEntities())
+            {
+                var Delete = studentDataEntities.tblStudents.Where(x => x.ID == id).FirstOrDefault();
+                studentDataEntities.tblStudents.Remove(Delete);
+                studentDataEntities.SaveChanges();
+            }
+                return RedirectToAction("GetData");
+        }
+    }
+}
+--------------------------------------
+view
+-----
+@model CrudApplication.Models.StudentInfo
+@{
+    ViewBag.Title = "GetData";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Student GetData</h2>
+@using (Html.BeginForm("AddData", "Student", FormMethod.Post))
+{
+    <div class="form-group">
+        @Html.HiddenFor(x => x.addstudent.ID, new { @class = "form-control" })
+    </div>
+
+    <div class="form-group">
+        @Html.LabelFor(x => x.addstudent.Name)
+        @Html.TextBoxFor(x => x.addstudent.Name, new { @class = "form-control" })
+        @Html.ValidationMessageFor(x => x.addstudent.Name)
+
+    </div>
+
+    <div class="form-group">
+        @Html.LabelFor(x => x.addstudent.Address)
+        @Html.TextBoxFor(x => x.addstudent.Address, new { @class = "form-control" })
+        @Html.ValidationMessageFor(x => x.addstudent.Address)
+    </div>
+
+    <div class="form-group">
+        @Html.LabelFor(x => x.addstudent.MobileNumber)
+        @Html.TextBoxFor(x => x.addstudent.MobileNumber, new { @class = "form-control" })
+        @Html.ValidationMessageFor(x => x.addstudent.MobileNumber)
+    </div>
+    if (Model.addstudent != null)
+    {
+        <input type="submit" value="Update" class="btn btn success" >
+    }
+    else
+    {
+        <input type="submit" value="save" class="btn btn success" >
+    }
+}
+    <div class="row mt-5">
+        <table class="table">
+            <tr>
+                <td>Name</td>
+                <td>Address</td>
+                <td>Mobile Number</td>
+
+                <td>Edit</td>
+                <td>Delete</td>
+            </tr>
+            @foreach(var data in Model.liststudent)
+            {
+        <tr>
+            <td>@data.Name</td>
+            <td>@data.Address</td>
+            <td>@data.MobileNumber</td>
+
+            <td>@Html.ActionLink("Edit","EditData", new { @id = data.ID})</td>
+            <td>@Html.ActionLink("Delete", "DeleteData", new { @id = data.ID })</td>
+        </tr>
+            }
+        </table>
+    </div>
+
+----------------------------------
+classvalidation
+----------------
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Web;
+
+namespace CrudApplication.Models
+{
+    public class StudentValidation
+    {
+        public int ID { get; set; }
+
+        [Display(Name = "Name")]
+        [Required(ErrorMessage = "Please enter Name")]
+        public string Name { get; set; }
+
+        [Display(Name = "Address")]
+        [Required(ErrorMessage = "Please enter Address")]
+        public string Address { get; set; }
+
+        [Display(Name = "Mobile Number")]
+        [Required(ErrorMessage = "Please enter Mobile Number")]
+        public string MobileNumber { get; set; }
+    }
+}
+------------------
+class_studentinfo
+------------------
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace CrudApplication.Models
+{
+    public class StudentInfo
+    {
+        public StudentValidation addstudent { get; set; }
+        public List<StudentValidation> liststudent { get; set; }
+    }
+}
+------------------------------
+validation library
+-------------------
+ <script src="~/lib/jquery/jquery.js"></script>
+    <script src="~/lib/jquery/jquery-validate/jquery.validate.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
